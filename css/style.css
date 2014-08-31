@@ -1,0 +1,12 @@
+div.cb-delete-guest {
+  display: none;
+}
+.cb-delete-row {
+  background-color: #FFD2CF;
+}
+input.error {
+  border-color: #f00;
+}
+.error {
+  color: #f00;
+}
