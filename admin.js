@@ -2,6 +2,10 @@ var $j = jQuery;
 
 $j(document).ready(function(){
 
+	$j.validator.addMethod("dateFormat", function(value, element) {
+        return value.match(/^dd?-dd?-dd$/);
+    }, "Please enter a date in the format dd-mm-yyyy.");
+
 	// Deselects all pending rows for deletion
 	function deselectAllDeletes() {
 
@@ -16,7 +20,7 @@ $j(document).ready(function(){
 	}
 
 	// set date picker for events
-	$j( "#event_date" ).datepicker({ dateFormat: "dd/mm/yy" });
+	$j( "#event_date" ).datepicker({ dateFormat: "dd-mm-yy" });
 
 	$j( ".cb-delete-request" ).click(function(){
 
@@ -37,8 +41,6 @@ $j(document).ready(function(){
 
 		deselectAllDeletes();		
 	});
-
-	alert
 
 	// Validate guest form
 	$j("#cb_guest_form").validate({
@@ -87,6 +89,31 @@ $j(document).ready(function(){
 		messages: {
 
 			role: " Please enter a role name"
+		}
+	});
+
+	
+
+	$j("#cb_event_form").validate({
+
+		rules: {
+
+			name: {
+				required: true,
+			},
+			display_date: {
+				required: true
+				//dateFormat: true
+			}
+		},
+
+		messages: {
+
+			name: " Please enter an event name",
+			display_date: {
+
+				required: " Please enter the date of the event"
+			}
 		}
 	});
 });

@@ -39,14 +39,17 @@ if ( !class_exists('cb_wedding_view') )
 			$page_hook_suffix2 = add_submenu_page( 'wedding', 'New Guest', 'New Guest', 'manage_categories', 'wedding-new-guest', array ( $this, 'guest' ) );
 			$page_hook_suffix3 = add_submenu_page( 'wedding', 'Roles', 'Roles', 'manage_categories', 'wedding-roles-list', array ( $this, 'roles_list' ) );
 			$page_hook_suffix4 = add_submenu_page( 'wedding', 'New Roles', 'New Role', 'manage_categories', 'wedding-new-role', array ( $this, 'role' ) );
-			$page_hook_suffix5 = add_submenu_page( 'wedding', 'New Event', 'New Event', 'manage_categories', 'wedding-new-event', array ( $this, 'new_event' ) );
+			$page_hook_suffix5 = add_submenu_page( 'wedding', 'Events', 'Events', 'manage_categories', 'wedding-event-list', array ( $this, 'event_list' ) );
+			$page_hook_suffix6 = add_submenu_page( 'wedding', 'New Event', 'New Event', 'manage_categories', 'wedding-new-event', array ( $this, 'event' ) );
 			
+
 			// Add JavaScript files 
 			add_action('admin_print_scripts-' . $page_hook_suffix1, array ( $this, 'plugin_admin_scripts' ) );
 			add_action('admin_print_scripts-' . $page_hook_suffix2, array ( $this, 'plugin_admin_scripts' ) );
 			add_action('admin_print_scripts-' . $page_hook_suffix3, array ( $this, 'plugin_admin_scripts' ) );
 			add_action('admin_print_scripts-' . $page_hook_suffix4, array ( $this, 'plugin_admin_scripts' ) );
 			add_action('admin_print_scripts-' . $page_hook_suffix5, array ( $this, 'plugin_admin_scripts' ) );
+			add_action('admin_print_scripts-' . $page_hook_suffix6, array ( $this, 'plugin_admin_scripts' ) );
 
 			// Add it's own section
 			add_action('admin_menu',array ( $this, 'admin_menu_separator' ));
@@ -349,7 +352,7 @@ if ( !class_exists('cb_wedding_view') )
 				 	case '1': {
 				 		?>
 						<div id="message" class="updated below-h2">
-							<p>The role has been saved</p>
+							<p>The role has been saved <a href="<?php echo admin_url('admin.php?page=wedding-roles-list') ?>">View Roles</a></p>
 						</div>
 						<?php
 				 		break;
@@ -471,28 +474,55 @@ if ( !class_exists('cb_wedding_view') )
 		// Event Views__________________________________________________________________________________________
 
 		// Creates a form to add event
-		public function new_event() {
+		public function event() {
 			if ( !current_user_can( 'manage_options' ) )  {
 				wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
 			}
 
+			// Minute Options
+			$op_minutes	= array(
+
+				1 => '00',
+				2 => '15',
+				3 => '30',
+				4 => '45'
+			);
+
+			// AM/PM Options
+			$op_ampm = array(
+
+				1 => 'am',
+				2 => 'pm'
+			);
+
 			// Set default form function - add event
 			$function = array (
 
-								'formTitle' => 'Add New Event',
-								'action'	=> 'addEvent',
-								'name'		=> 'placeholder="Event Name"',
-								'desription'=> 'placeholder="Description"',
-								'location'	=> 'placeholder="Location"',
-								'postcode'  => 'placeholder="postcode"',
-								'date'		=> 'placeholder="dd/mm/yyyy"'
+								'formTitle' 	=> 'Add New Event',
+								'action'		=> 'addEvent',
+								'name'			=> 'placeholder="Event Name"',
+								'description'	=> 'placeholder="Description"',
+								'location'		=> 'placeholder="Location"',
+								'postcode'  	=> 'placeholder="postcode"',
+								'date'			=> 'placeholder="dd/mm/yyyy"',
+								'weddingDay'	=> ''
 			);
+
+			$date 		= '';
+
+			$hours 		= '';
+			$minutes 	= '';
 
 			// are we editing a guest
 			if ( isset($_GET['id']) ) {
 
 				// get row for id 
-				//$row = $this->model->getEvent($_GET['id']);
+				$row = $this->model->getEvent($_GET['id']);
+
+				$date 		= date("d-m-Y", strtotime($row->time));
+
+				$hours 		= date("G", strtotime($row->time));
+				$minutes 	= date("i", strtotime($row->time));
 
 				// populate fields for editing
 				$function['action'] 	= 'editEvent&id=' . $_GET['id'];
@@ -500,8 +530,9 @@ if ( !class_exists('cb_wedding_view') )
 				$function['name']		= 'value="' . $row->name . '"';
 				$function['description']= 'value="' . $row->description . '"';
 				$function['location']	= 'value="' . $row->location . '"';
-				//$function['postcode']	= 'value="' . $row->postcode . '"';
-				$function['date']	= 'value="' . $row->date. '"';
+				$function['postcode']	= 'value="' . $row->postcode . '"';
+				$function['date']		= 'value="' . $date. '"';
+				$function['weddingDay'] = $row->wedding_day == '1' ? 'checked' : '';
 			}
 
 			?>
@@ -514,7 +545,7 @@ if ( !class_exists('cb_wedding_view') )
 					case '0': {
 				 		?>
 						<div id="message" class="error below-h2">
-							<p>There was a problem saving the role</p>
+							<p>There was a problem saving the event</p>
 						</div>
 						<?php
 				 		break;
@@ -523,7 +554,7 @@ if ( !class_exists('cb_wedding_view') )
 				 	case '1': {
 				 		?>
 						<div id="message" class="updated below-h2">
-							<p>The role has been saved</p>
+							<p>The event has been saved <a href="<?php echo admin_url('admin.php?page=wedding-event-list') ?>">View Events</a></p>
 						</div>
 						<?php
 				 		break;
@@ -540,7 +571,7 @@ if ( !class_exists('cb_wedding_view') )
 							<td><input id="event_name" type="text" name="name" <?php echo $function['name'] ?> /></td>
 						</tr>
 						<tr>
-							<td><label for="event_description">Desription</label></td>
+							<td><label for="event_description">Description</label></td>
 							<td><input id="event_description" type="text" name="description" <?php echo $function['description'] ?> /></td>
 						</tr>
 						<tr>
@@ -551,7 +582,7 @@ if ( !class_exists('cb_wedding_view') )
 							</td>
 						</tr>
 						<tr>
-							<td><label for="event_postcode">Postcode/label></td>
+							<td><label for="event_postcode">Postcode</label></td>
 							<td>
 								<input id="event_postcode" type="text" name="postcode" <?php echo $function['postcode'] ?> />
 							</td>
@@ -563,48 +594,132 @@ if ( !class_exists('cb_wedding_view') )
 						<tr>
 							<td><label for="event_date">Time</label></td>
 							<td>
-								<select>
-									<option>1</option>
-									<option>2</option>
-									<option>3</option>
-									<option>4</option>
-									<option>5</option>
-									<option>6</option>
-									<option>7</option>
-									<option>8</option>
-									<option>9</option>
-									<option>10</option>
-									<option>11</option>
-									<option>12</option>
+								<select name="hours">
+									<?php
+									for ( $i=0; $i<=23; $i++ )
+									{
+										$selected = $hours == $i ? 'selected' : ''; 
+										echo '<option value="'.$i.'" '.$selected.'>'.$i.'</option>';
+									}
+									?>
 								</select>
 							:
-								<select>
-									<option>00</option>
-									<option>15</option>
-									<option>30</option>
-									<option>45</option>
-								</select>
-
-								<select>
-									<option>am</option>
-									<option>pm</option>
+								<select name="minutes">
+									<?php
+									for ( $i=1; $i<=4; $i++ )
+									{
+										$selected = $minutes == $op_minutes[$i] ? 'selected' : ''; 
+										echo '<option value="'.$op_minutes[$i].'" '.$selected.'>'.$op_minutes[$i].'</option>';
+									}
+									?>
 								</select>
 							</td>
 						</tr>
 						<tr>
 							<td><label for="event_wedding_day">Wedding Day Event</label></td>
 							<td>
-								<input id="event_wedding_day" type="checkbox" name="wedding_day" value="1">
+								<input id="event_wedding_day" type="checkbox" name="wedding_day" value="1" <?php echo $function['weddingDay'] ?> />
 								<p class="description">Is this event on the day of the wedding?</p>
 							</td>
 						</tr>
 						<tr>
-							<td></td><td><input type="submit" name="eventForm value="save" class="button button-primary button-large"/></td>
+							<td></td><td><input type="submit" name="eventForm" value="save" class="button button-primary button-large"/></td>
 						</tr>
 					</table>
 				</form>
 			</div>
 			<?php
+		}
+
+		// Event List 
+		public function event_list()
+		{
+			if ( !current_user_can( 'manage_options' ) )  {
+				wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+			}
+			?>
+			<div class="wrap">
+				<h2>Events <a href="<?php echo admin_url('admin.php?page=wedding-new-event'); ?>" class="add-new-h2">Add New</a></h2>
+				
+				<?php
+				// Success/Fail Banner
+				switch ($this->controller->getActionResult()) {
+					case '0': {
+				 		?>
+						<div id="message" class="error below-h2">
+							<p>There was a problem deleting the role</p>
+						</div>
+						<?php
+				 		break;
+				 	}				 	
+
+				 	case '1': {
+				 		?>
+						<div id="message" class="updated below-h2">
+							<p>The event has been deleted</p>
+						</div>
+						<?php
+				 		break;
+				 	}
+				 	default:
+				 		# code...
+				 		break;
+				} 
+				?>
+
+				<table class="wp-list-table widefat fixed">
+					<thead>
+						<tr>
+							<th id="selectAll" ><input type="checkbox"></th>
+							<th id="event_name" class=" ">Event Name</th>
+							<th id="event_date" class=" ">Date</th>
+							<th id="event_time" class=" ">Time</th>
+							<th id="event_wedding_day" class=" ">Wedding Day</th>	
+							<th id="edit" class=" "></th>
+							<th id="delete" class=" "></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php 
+						
+						// get guest list from the model
+						$rows = $this->model->getEventList();
+
+						// display guest list
+						foreach( $rows as $row) { 
+							
+							// Break out time and date
+							$date = date("l, jS F Y", strtotime($row->time));
+
+							$time = date("g:i a", strtotime($row->time));
+						?>
+							<tr class="cb-guest-row" id="event_Id<?php echo $row->event_Id; ?>">
+								<td id="selectAll" ><input type="checkbox"></td>
+								<td class=" "><?php echo $row->name; ?></td>
+								<td class=" "><?php echo $date; ?></td>
+								<td class=" "><?php echo $time; ?></td>
+								<td class=" "><?php echo $row->wedding_day; ?></td>
+								<td class=" "><a href="<?php echo admin_url('admin.php?page=wedding-new-event&id=' . $row->event_Id ); ?>">edit</a></td>
+								<td class=" ">
+									<a id="cb_delete_request_<?php echo $row->event_Id; ?>"  class="cb-delete-request" href="#">delete</a>
+									<div class="cb-delete-guest">
+										<div>Remove Event?</div>
+										<div>
+											<a id="cb_delete_guest_<?php echo $row->event_Id; ?>" href="<?php echo admin_url('admin.php?page=wedding-event-list&cb-wedding-action=deleteEvent&id=' . $row->event_Id ); ?>">yes</a> | 
+											<a class="cb-delete-no" href="#">no</a>
+										</div>
+									</div>
+								</td>
+							</tr>
+						<?php
+						}
+						?>
+					</tbody>
+				</table>
+
+			</div>	
+			<?php			
+
 		}
 	}
 }
